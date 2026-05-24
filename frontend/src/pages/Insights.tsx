@@ -1,133 +1,112 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-type InsightsData = {
-    [ticker: string]: {
-        RSI?: number;
-        message?: string;
-    };
-};
-
-type AgentScore = {
-    [agent: string]: number;
-};
-
-type Allocation = {
-    [agent: string]: number;
-};
-
-type StockData = {
-    scores?: AgentScore;
-    allocation?: Allocation;
-};
-
-type SimulateData = {
-    [ticker: string]: StockData;
-};
+import type { FormEvent } from "react";
+import { ConfidenceBar } from "../components/ConfidenceBar";
+import { Status } from "../components/Status";
+import { fetchNews, runDebate } from "../lib/api";
+import type { DebateResponse, NewsArticle } from "../lib/api";
 
 function Insights() {
-    const [insights, setInsights] = useState<InsightsData | null>(null);
-    const [data, setData] = useState<SimulateData | null>(null);
+  const [ticker, setTicker] = useState("AAPL");
+  const [debate, setDebate] = useState<DebateResponse | null>(null);
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  async function refresh(nextTicker = ticker) {
+    setLoading(true);
+    setError(null);
+    try {
+      const [nextDebate, nextArticles] = await Promise.all([
+        runDebate(nextTicker, `Explain the current ${nextTicker} signal and the evidence behind it.`),
+        fetchNews(nextTicker),
+      ]);
+      setDebate(nextDebate);
+      setArticles(nextArticles);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load explainability panel");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const fetchData = async () => {
-        try {
-            const res1 = await axios.get<InsightsData>("http://127.0.0.1:8000/insights");
-            const res2 = await axios.get<SimulateData>("http://127.0.0.1:8000/simulate");
+  useEffect(() => {
+    refresh("AAPL");
+  }, []);
 
-            console.log("INSIGHTS:", res1.data);
-            console.log("SIMULATION:", res2.data);
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    refresh(ticker.toUpperCase().trim() || "AAPL");
+  }
 
-            setInsights(res1.data);
-            setData(res2.data);
-        } catch (err) {
-            console.error(err);
-            alert("Error fetching insights");
-        }
-    };
-
-    if (!insights || !data) return <h3>Loading insights...</h3>;
-
-    return (
+  return (
+    <div className="page-stack">
+      <header className="page-header">
         <div>
-            <h1 style={{ color: "#4A0F0F" }}>🧠 AI Insights</h1>
-
-            {Object.keys(data).map((ticker) => {
-                const stockInsights = insights[ticker];
-                const stockData = data[ticker];
-
-                const scores = stockData?.scores || {};
-                const allocation = stockData?.allocation || {};
-
-                // 🏆 Find best agent per stock
-                const bestAgent = Object.keys(scores).reduce((a, b) =>
-                    scores[a] > scores[b] ? a : b
-                    , Object.keys(scores)[0]);
-
-                return (
-                    <div key={ticker} style={{ marginTop: "30px" }}>
-
-                        <h2>{ticker}</h2>
-
-                        {/* MARKET INSIGHT */}
-                        <div style={{
-                            background: "black",
-                            padding: "20px",
-                            borderRadius: "12px",
-                            marginTop: "10px"
-                        }}>
-                            <h3>Market Analysis</h3>
-                            <p>{stockInsights?.message || "No insight available"}</p>
-                            <p><b>RSI:</b> {stockInsights?.RSI?.toFixed(2) ?? "N/A"}</p>
-                        </div>
-
-                        {/* BEST AGENT */}
-                        <div style={{
-                            background: "black",
-                            padding: "20px",
-                            borderRadius: "12px",
-                            marginTop: "10px"
-                        }}>
-                            <h3>🏆 Best Strategy</h3>
-                            <p><b>{bestAgent || "N/A"}</b></p>
-
-                            <p>
-                                Score:{" "}
-                                {scores[bestAgent] !== undefined
-                                    ? scores[bestAgent].toFixed(3)
-                                    : "N/A"}
-                            </p>
-
-                            <p>
-                                Allocation: ₹{" "}
-                                {allocation[bestAgent] !== undefined
-                                    ? allocation[bestAgent].toFixed(2)
-                                    : "N/A"}
-                            </p>
-                        </div>
-
-                        {/* RISK */}
-                        <div style={{
-                            background: "black",
-                            padding: "20px",
-                            borderRadius: "12px",
-                            marginTop: "10px"
-                        }}>
-                            <h3>⚠️ Risk Insight</h3>
-                            <p>
-                                Market volatility may impact returns.
-                                Diversification across strategies reduces risk.
-                            </p>
-                        </div>
-
-                    </div>
-                );
-            })}
+          <span className="eyebrow">Explainable AI</span>
+          <h1>Reasoning logs and sentiment trace</h1>
         </div>
-    );
+        <form className="ticker-form" onSubmit={submit}>
+          <input value={ticker} onChange={(event) => setTicker(event.target.value.toUpperCase())} />
+          <button type="submit">Explain</button>
+        </form>
+      </header>
+
+      <Status loading={loading} error={error} />
+
+      {debate ? (
+        <section className="insight-grid">
+          <div className="panel">
+            <div className="panel-heading">
+              <div>
+                <span className={`action ${debate.final_action.toLowerCase()}`}>{debate.final_action}</span>
+                <h2>Moderator decision</h2>
+              </div>
+              <ConfidenceBar value={debate.confidence} />
+            </div>
+            <div className="agent-list">
+              {debate.opinions.map((opinion) => (
+                <article className="agent-row" key={opinion.agent}>
+                  <div>
+                    <strong>{opinion.agent.replace("_", " ")}</strong>
+                    <p>{opinion.rationale}</p>
+                  </div>
+                  <span className={`action ${opinion.action.toLowerCase()}`}>{opinion.action}</span>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-heading">
+              <h2>Reasoning log</h2>
+            </div>
+            <div className="timeline">
+              {debate.reasoning.map((step, index) => (
+                <article key={`${step.agent}-${index}`}>
+                  <span>{new Date(step.ts).toLocaleTimeString()}</span>
+                  <strong>{step.agent}: {step.title}</strong>
+                  <pre>{JSON.stringify(step.data, null, 2)}</pre>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="panel news-panel">
+            <div className="panel-heading">
+              <h2>Financial news sentiment</h2>
+            </div>
+            {articles.map((article) => (
+              <a className="news-card" href={article.url ?? "#"} key={article.id} target="_blank" rel="noreferrer">
+                <span>{article.source ?? "market news"} / sentiment {article.sentiment.toFixed(2)}</span>
+                <strong>{article.headline}</strong>
+                {article.summary ? <p>{article.summary}</p> : null}
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
 export default Insights;

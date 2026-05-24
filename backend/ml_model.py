@@ -1,6 +1,15 @@
 import pandas as pd
 import yfinance as yf
-from xgboost import XGBClassifier
+
+try:
+    from xgboost import XGBClassifier
+except Exception:
+    XGBClassifier = None  # type: ignore[assignment]
+
+try:
+    from sklearn.ensemble import RandomForestClassifier
+except Exception:
+    RandomForestClassifier = None  # type: ignore[assignment]
 
 models = {}
 data_store = {}
@@ -39,12 +48,17 @@ def train_single_stock(ticker):
     X = df[cols]
     y = df["Target"]
 
-    model = XGBClassifier(
-        n_estimators=100,
-        max_depth=4,
-        learning_rate=0.1,
-        eval_metric="logloss"
-    )
+    if XGBClassifier is not None:
+        model = XGBClassifier(
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.1,
+            eval_metric="logloss"
+        )
+    elif RandomForestClassifier is not None:
+        model = RandomForestClassifier(n_estimators=120, max_depth=5, random_state=42)
+    else:
+        return None, df
 
     model.fit(X, y)
 

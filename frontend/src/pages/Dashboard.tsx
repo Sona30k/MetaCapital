@@ -1,103 +1,218 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ConfidenceBar } from "../components/ConfidenceBar";
+import { MetricCard } from "../components/MetricCard";
+import { Status } from "../components/Status";
+import {
+  fetchNews,
+  fetchPortfolio,
+  placeOrder,
+  runDebate,
+} from "../lib/api";
+import type { DebateResponse, NewsArticle, PortfolioSnapshot } from "../lib/api";
 
-type Metrics = {
-    sharpe?: number;
-};
+const defaultTicker = "AAPL";
 
-type AgentResult = {
-    final_capital?: number;
-    metrics?: Metrics;
-};
+function money(value: number) {
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
 
-type StockResult = {
-    results?: {
-        ml?: AgentResult;
-        random?: AgentResult;
-    };
-};
-
-type ApiResponse = {
-    [ticker: string]: StockResult;
-};
+function sentimentLabel(score: number) {
+  if (score > 0.15) return "Positive";
+  if (score < -0.15) return "Negative";
+  return "Neutral";
+}
 
 function Dashboard() {
-    const [data, setData] = useState<ApiResponse | null>(null);
+  const [ticker, setTicker] = useState(defaultTicker);
+  const [debate, setDebate] = useState<DebateResponse | null>(null);
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioSnapshot | null>(null);
+  const [qty, setQty] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  const avgSentiment = useMemo(() => {
+    if (!news.length) return 0;
+    return news.reduce((sum, item) => sum + item.sentiment, 0) / news.length;
+  }, [news]);
 
-    const fetchData = async () => {
-        try {
-            const res = await axios.get<ApiResponse>("http://127.0.0.1:8000/simulate");
-            console.log("API DATA:", res.data); // 🔥 debug
-            setData(res.data);
-        } catch (err) {
-            console.error("API ERROR:", err);
-        }
-    };
+  const agentChart = useMemo(
+    () =>
+      debate?.opinions.map((opinion) => ({
+        agent: opinion.agent.replace("_", " "),
+        confidence: Math.round(opinion.confidence * 100),
+      })) ?? [],
+    [debate],
+  );
 
-    if (!data) return <h2>Loading AI Data...</h2>;
+  const sentimentChart = news.map((article, index) => ({
+    name: `N${index + 1}`,
+    sentiment: Number(article.sentiment.toFixed(2)),
+  }));
 
-    return (
+  async function refresh(nextTicker = ticker) {
+    setLoading(true);
+    setError(null);
+    try {
+      const [debateData, newsData, portfolioData] = await Promise.all([
+        runDebate(nextTicker, `Should MetaCapital buy, sell, or hold ${nextTicker} this week?`),
+        fetchNews(nextTicker),
+        fetchPortfolio(),
+      ]);
+      setDebate(debateData);
+      setNews(newsData);
+      setPortfolio(portfolioData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh(defaultTicker);
+  }, []);
+
+  async function submitTicker(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    refresh(ticker.toUpperCase().trim() || defaultTicker);
+  }
+
+  async function trade(side: "BUY" | "SELL") {
+    setError(null);
+    try {
+      const updated = await placeOrder(ticker, side, qty);
+      setPortfolio(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Order rejected");
+    }
+  }
+
+  return (
+    <div className="page-stack">
+      <header className="page-header">
         <div>
-            <h1>📊 Dashboard</h1>
-
-            {Object.keys(data).map((ticker) => {
-                const stock = data[ticker];
-
-                const ml = stock?.results?.ml;
-                const random = stock?.results?.random;
-
-                return (
-                    <div
-                        key={ticker}
-                        style={{
-                            background: "black",
-                            padding: "20px",
-                            marginBottom: "20px",
-                            borderRadius: "10px",
-                            color: "white",
-                            boxShadow: "0 2px 10px rgba(0,0,0,0.3)"
-                        }}
-                    >
-                        <h2>{ticker}</h2>
-
-                        {/* Capital */}
-                        <p>
-                            🤖 ML Capital: ₹
-                            {ml?.final_capital !== undefined
-                                ? ml.final_capital.toFixed(2)
-                                : "N/A"}
-                        </p>
-
-                        <p>
-                            🎲 Random Capital: ₹
-                            {random?.final_capital !== undefined
-                                ? random.final_capital.toFixed(2)
-                                : "N/A"}
-                        </p>
-
-                        {/* Metrics */}
-                        <p>
-                            📈 ML Sharpe:{" "}
-                            {ml?.metrics?.sharpe !== undefined
-                                ? ml.metrics.sharpe.toFixed(4)
-                                : "N/A"}
-                        </p>
-
-                        <p>
-                            📉 Random Sharpe:{" "}
-                            {random?.metrics?.sharpe !== undefined
-                                ? random.metrics.sharpe.toFixed(4)
-                                : "N/A"}
-                        </p>
-                    </div>
-                );
-            })}
+          <span className="eyebrow">AI command center</span>
+          <h1>Multi-agent financial analysis</h1>
         </div>
-    );
+        <form className="ticker-form" onSubmit={submitTicker}>
+          <input value={ticker} onChange={(event) => setTicker(event.target.value.toUpperCase())} />
+          <button type="submit">Analyze</button>
+        </form>
+      </header>
+
+      <Status loading={loading} error={error} />
+
+      {debate && portfolio ? (
+        <>
+          <section className="metric-grid">
+            <MetricCard label="Agent decision" value={debate.final_action} sublabel={debate.ticker} tone={debate.final_action === "BUY" ? "good" : debate.final_action === "SELL" ? "bad" : "neutral"} />
+            <MetricCard label="Portfolio equity" value={money(portfolio.account.equity)} sublabel={`${money(portfolio.account.pnl)} open P/L`} tone={portfolio.account.pnl >= 0 ? "good" : "bad"} />
+            <MetricCard label="News sentiment" value={sentimentLabel(avgSentiment)} sublabel={avgSentiment.toFixed(2)} tone={avgSentiment >= 0 ? "good" : "bad"} />
+            <MetricCard label="Cash available" value={money(portfolio.account.cash)} sublabel="fake-money simulator" />
+          </section>
+
+          <section className="dashboard-grid">
+            <div className="panel debate-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="eyebrow">AI debate</span>
+                  <h2>{debate.question}</h2>
+                </div>
+                <ConfidenceBar value={debate.confidence} />
+              </div>
+
+              <div className="agent-list">
+                {debate.opinions.map((opinion) => (
+                  <article className="agent-row" key={opinion.agent}>
+                    <div>
+                      <strong>{opinion.agent.replace("_", " ")}</strong>
+                      <p>{opinion.rationale}</p>
+                    </div>
+                    <span className={`action ${opinion.action.toLowerCase()}`}>{opinion.action}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="panel chart-panel">
+              <div className="panel-heading">
+                <h2>Confidence scoring</h2>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={agentChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#253047" />
+                  <XAxis dataKey="agent" stroke="#8ea0bd" />
+                  <YAxis stroke="#8ea0bd" />
+                  <Tooltip contentStyle={{ background: "#101827", border: "1px solid #28344f" }} />
+                  <Bar dataKey="confidence" fill="#46d3a8" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="panel">
+              <div className="panel-heading">
+                <h2>Fake-money portfolio</h2>
+              </div>
+              <div className="trade-ticket">
+                <input type="number" min="1" value={qty} onChange={(event) => setQty(Number(event.target.value))} />
+                <button type="button" onClick={() => trade("BUY")}>Buy</button>
+                <button type="button" className="danger" onClick={() => trade("SELL")}>Sell</button>
+              </div>
+              <div className="positions">
+                {portfolio.positions.length ? (
+                  portfolio.positions.map((position) => (
+                    <div className="position-row" key={position.ticker}>
+                      <strong>{position.ticker}</strong>
+                      <span>{position.qty} shares</span>
+                      <span>{money(position.pnl)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">No open positions yet.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="panel chart-panel">
+              <div className="panel-heading">
+                <h2>News sentiment feed</h2>
+              </div>
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart data={sentimentChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#253047" />
+                  <XAxis dataKey="name" stroke="#8ea0bd" />
+                  <YAxis domain={[-1, 1]} stroke="#8ea0bd" />
+                  <Tooltip contentStyle={{ background: "#101827", border: "1px solid #28344f" }} />
+                  <Area dataKey="sentiment" stroke="#7aa2ff" fill="#243b73" />
+                </AreaChart>
+              </ResponsiveContainer>
+              <div className="news-list">
+                {news.slice(0, 4).map((article) => (
+                  <a href={article.url ?? "#"} key={article.id} target="_blank" rel="noreferrer">
+                    <span>{article.source ?? "market news"}</span>
+                    {article.headline}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 export default Dashboard;

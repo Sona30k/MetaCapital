@@ -1,57 +1,476 @@
+:root {
+  color: #e7edf7;
+  background: #080b12;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-    margin: 0;
-    font-family: "Inter", sans-serif;
-    background: linear-gradient(135deg, #2b0f0f, #4A0F0F, #7a2e2e);
-    color: white;
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(31, 92, 119, 0.18), transparent 32rem),
+    linear-gradient(135deg, #080b12 0%, #0c111d 45%, #15120e 100%);
 }
 
-/* CARD */
-.card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-    transition: 0.3s;
+button,
+input {
+  font: inherit;
 }
 
-.card:hover {
-    transform: translateY(-5px);
+button {
+  border: 0;
+  cursor: pointer;
 }
 
-/* SIDEBAR */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: #f8fbff;
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+h2 {
+  color: #f8fbff;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.terminal-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
 .sidebar {
-    width: 220px;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    padding: 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid #223049;
+  background: rgba(7, 12, 22, 0.88);
+  padding: 1.25rem;
 }
 
-/* LINKS */
-.nav-link {
-    display: block;
-    margin: 10px 0;
-    color: #ddd;
-    text-decoration: none;
-    transition: 0.2s;
+.brand {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
 }
 
-.nav-link:hover {
-    color: white;
-    transform: translateX(5px);
+.brand-mark {
+  align-items: center;
+  background: #46d3a8;
+  border-radius: 8px;
+  color: #04120f;
+  display: inline-flex;
+  font-size: 0.85rem;
+  font-weight: 800;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
 }
 
-/* BUTTON */
-.btn {
-    background: linear-gradient(135deg, #8B3A3A, #B56565);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    color: white;
-    cursor: pointer;
+.brand strong,
+.brand small {
+  display: block;
 }
 
-.btn:hover {
-    opacity: 0.9;
+.brand small,
+.eyebrow,
+.muted {
+  color: #8ea0bd;
+}
+
+.sidebar nav {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sidebar a {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #b7c4d9;
+  padding: 0.78rem 0.85rem;
+}
+
+.sidebar a.active,
+.sidebar a:hover {
+  background: #101827;
+  border-color: #28344f;
+  color: #ffffff;
+}
+
+.workspace {
+  min-width: 0;
+  padding: 1rem 1.25rem 2rem;
+}
+
+.quote-tape {
+  align-items: center;
+  border: 1px solid #223049;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding: 0.65rem;
+}
+
+.status-dot {
+  background: #ff7a90;
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 10px;
+  width: 10px;
+}
+
+.status-dot.online {
+  background: #46d3a8;
+}
+
+.quote-chip {
+  align-items: center;
+  background: #101827;
+  border: 1px solid #28344f;
+  border-radius: 8px;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.quote-chip span,
+.eyebrow,
+.metric-card span,
+.news-list span,
+.news-card span {
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.page-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header {
+  align-items: end;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.5rem 0;
+}
+
+.ticker-form,
+.trade-ticket {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ticker-form input,
+.trade-ticket input {
+  background: #0c1322;
+  border: 1px solid #2a3955;
+  border-radius: 8px;
+  color: #f8fbff;
+  min-height: 42px;
+  padding: 0 0.85rem;
+  width: 110px;
+}
+
+.ticker-form button,
+.trade-ticket button,
+.segmented button {
+  background: #46d3a8;
+  border-radius: 8px;
+  color: #04120f;
+  font-weight: 700;
+  min-height: 42px;
+  padding: 0 0.9rem;
+}
+
+.trade-ticket .danger {
+  background: #ff7a90;
+  color: #1a0509;
+}
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.segmented button {
+  background: #101827;
+  border: 1px solid #28344f;
+  color: #b7c4d9;
+}
+
+.segmented button.active {
+  background: #1c3f4f;
+  color: #ffffff;
+}
+
+.metric-grid,
+.dashboard-grid,
+.insight-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-grid,
+.insight-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+}
+
+.panel {
+  background: rgba(15, 22, 36, 0.86);
+  border: 1px solid #253047;
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  min-width: 0;
+  padding: 1rem;
+}
+
+.metric-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.metric-card strong {
+  color: #ffffff;
+  font-size: 1.65rem;
+  line-height: 1.05;
+}
+
+.metric-card small {
+  color: #8ea0bd;
+}
+
+.metric-card.good strong,
+.action.buy {
+  color: #46d3a8;
+}
+
+.metric-card.bad strong,
+.action.sell {
+  color: #ff7a90;
+}
+
+.action.hold {
+  color: #f7c948;
+}
+
+.panel-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.confidence {
+  min-width: 160px;
+}
+
+.confidence-label {
+  color: #b7c4d9;
+  display: flex;
+  font-size: 0.78rem;
+  justify-content: space-between;
+}
+
+.confidence-track {
+  background: #1b263a;
+  border-radius: 999px;
+  height: 8px;
+  margin-top: 0.4rem;
+  overflow: hidden;
+}
+
+.confidence-track span {
+  background: linear-gradient(90deg, #46d3a8, #7aa2ff);
+  display: block;
+  height: 100%;
+}
+
+.agent-list,
+.positions,
+.news-list,
+.timeline,
+.news-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.agent-row,
+.position-row {
+  align-items: center;
+  background: #0c1322;
+  border: 1px solid #24314b;
+  border-radius: 8px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.8rem;
+}
+
+.agent-row p {
+  color: #9dafc8;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.action {
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.32rem 0.5rem;
+}
+
+.news-list a,
+.news-card {
+  border-top: 1px solid #24314b;
+  color: #dce6f5;
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.75rem;
+}
+
+.news-list span,
+.news-card span {
+  color: #8ea0bd;
+}
+
+.state {
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.state-loading {
+  background: #101827;
+  border: 1px solid #28344f;
+  color: #b7c4d9;
+}
+
+.state-error {
+  background: rgba(255, 122, 144, 0.12);
+  border: 1px solid rgba(255, 122, 144, 0.45);
+  color: #ffd6dd;
+}
+
+.timeline article {
+  border-left: 2px solid #46d3a8;
+  padding-left: 0.85rem;
+}
+
+.timeline span {
+  color: #8ea0bd;
+  display: block;
+  font-size: 0.78rem;
+}
+
+pre {
+  background: #080d17;
+  border: 1px solid #24314b;
+  border-radius: 8px;
+  color: #b7c4d9;
+  margin: 0.5rem 0 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.table-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1.3fr repeat(4, minmax(90px, 1fr));
+  overflow-x: auto;
+}
+
+.table-grid > * {
+  border-bottom: 1px solid #24314b;
+  padding: 0.35rem 0;
+}
+
+@media (max-width: 980px) {
+  .terminal-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    height: auto;
+    position: static;
+  }
+
+  .sidebar nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-grid,
+  .dashboard-grid,
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace {
+    padding: 0.75rem;
+  }
+
+  .sidebar nav {
+    grid-template-columns: 1fr;
+  }
+
+  .ticker-form,
+  .trade-ticket,
+  .panel-heading,
+  .agent-row,
+  .position-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ticker-form input,
+  .ticker-form button,
+  .trade-ticket input,
+  .trade-ticket button {
+    width: 100%;
+  }
 }
