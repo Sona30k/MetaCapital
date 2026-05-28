@@ -179,3 +179,50 @@ class CompareRequest(BaseModel):
 class CompareResponse(BaseModel):
     results: list[BacktestResult]
 
+
+# -----------------------------
+# Analytics dashboard
+# -----------------------------
+
+TimeRange = Literal["1M", "3M", "1Y"]
+
+
+class CorrelationCell(BaseModel):
+    x: str
+    y: str
+    value: float
+
+
+class AlphaBetaPoint(BaseModel):
+    ticker: str
+    annual_return: float
+    volatility: float
+    beta: float
+    alpha: float
+    sharpe: float
+    interpretation: str
+
+
+class MonteCarloPoint(BaseModel):
+    day: int
+    p10: float
+    p50: float
+    p90: float
+
+
+class PortfolioRiskMetrics(BaseModel):
+    volatility: float
+    diversification_score: float
+    max_drawdown: float
+    interpretation: str
+
+
+class AnalyticsResponse(BaseModel):
+    tickers: list[str]
+    benchmark: str
+    time_range: TimeRange
+    correlation: list[CorrelationCell]
+    correlation_interpretation: str
+    alpha_beta: list[AlphaBetaPoint]
+    portfolio_risk: PortfolioRiskMetrics
+    monte_carlo: list[MonteCarloPoint]

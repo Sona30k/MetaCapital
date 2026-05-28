@@ -42,10 +42,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="space-y-1">
           <NavLink to="/" className={navLinkClass} end>
-            Terminal
+            Command Center
           </NavLink>
           <NavLink to="/strategies" className={navLinkClass}>
             Strategy Lab
+          </NavLink>
+          <NavLink to="/analytics" className={navLinkClass}>
+            Risk Analytics
           </NavLink>
           <NavLink to="/portfolio" className={navLinkClass}>
             Paper Portfolio

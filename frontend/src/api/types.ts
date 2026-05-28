@@ -89,3 +89,45 @@ export type BacktestResult = {
 
 export type CompareResponse = { results: BacktestResult[] };
 
+export type AnalyticsTimeRange = "1M" | "3M" | "1Y";
+
+export type CorrelationCell = {
+  x: string;
+  y: string;
+  value: number;
+};
+
+export type AlphaBetaPoint = {
+  ticker: string;
+  annual_return: number;
+  volatility: number;
+  beta: number;
+  alpha: number;
+  sharpe: number;
+  interpretation: string;
+};
+
+export type MonteCarloPoint = {
+  day: number;
+  p10: number;
+  p50: number;
+  p90: number;
+};
+
+export type PortfolioRiskMetrics = {
+  volatility: number;
+  diversification_score: number;
+  max_drawdown: number;
+  interpretation: string;
+};
+
+export type AnalyticsResponse = {
+  tickers: string[];
+  benchmark: string;
+  time_range: AnalyticsTimeRange;
+  correlation: CorrelationCell[];
+  correlation_interpretation: string;
+  alpha_beta: AlphaBetaPoint[];
+  portfolio_risk: PortfolioRiskMetrics;
+  monte_carlo: MonteCarloPoint[];
+};
