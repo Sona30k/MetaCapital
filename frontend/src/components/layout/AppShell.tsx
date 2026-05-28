@@ -12,25 +12,38 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(" ");
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [apiStatus, setApiStatus] = useState<"checking" | "waking" | "online" | "offline">("checking");
 
   useEffect(() => {
     let active = true;
-    getHealth()
-      .then(() => active && setApiStatus("online"))
-      .catch(() => active && setApiStatus("offline"));
+    let attempts = 0;
+    let timer: number | undefined;
 
-    const interval = window.setInterval(() => {
-      getHealth()
-        .then(() => active && setApiStatus("online"))
-        .catch(() => active && setApiStatus("offline"));
-    }, 30_000);
+    const checkHealth = async () => {
+      attempts += 1;
+      try {
+        await getHealth();
+        if (!active) return;
+        attempts = 0;
+        setApiStatus("online");
+        timer = window.setTimeout(checkHealth, 30_000);
+      } catch {
+        if (!active) return;
+        setApiStatus(attempts <= 20 ? "waking" : "offline");
+        timer = window.setTimeout(checkHealth, attempts <= 20 ? 4_000 : 30_000);
+      }
+    };
+
+    void checkHealth();
 
     return () => {
       active = false;
-      window.clearInterval(interval);
+      if (timer) window.clearTimeout(timer);
     };
   }, []);
+
+  const apiTone = apiStatus === "online" ? "success" : apiStatus === "offline" ? "danger" : "warn";
+  const apiLabel = apiStatus === "waking" ? "API WAKING" : `API ${apiStatus.toUpperCase()}`;
 
   return (
     <div className="flex h-full">
@@ -59,19 +72,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="mt-auto space-y-2 pt-6 text-xs text-base-200/60">
-          <Badge tone={apiStatus === "online" ? "success" : apiStatus === "checking" ? "warn" : "danger"}>
-            API {apiStatus.toUpperCase()}
-          </Badge>
+          <Badge tone={apiTone}>{apiLabel}</Badge>
           <div className="break-all">{API_BASE_URL}</div>
+          {apiStatus === "waking" && <div>Free Render services can take a moment to wake up.</div>}
         </div>
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-white/10 bg-black/10 px-4 py-3 md:hidden">
           <div className="text-sm font-semibold text-white">MetaCapital</div>
-          <Badge tone={apiStatus === "online" ? "success" : apiStatus === "checking" ? "warn" : "danger"}>
-            API {apiStatus.toUpperCase()}
-          </Badge>
+          <Badge tone={apiTone}>{apiLabel}</Badge>
         </div>
         <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
       </main>

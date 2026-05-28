@@ -3,7 +3,7 @@ import { API_BASE_URL } from "./config";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20_000,
+  timeout: 45_000,
 });
 
 const SESSION_KEY = "metacapital.sessionId";
@@ -23,6 +23,8 @@ api.interceptors.request.use((config) => {
 });
 
 export async function getHealth() {
-  const response = await api.get<{ ok: boolean; settings: Record<string, unknown> }>("/health");
+  const response = await api.get<{ ok: boolean; settings: Record<string, unknown> }>("/health", {
+    timeout: 60_000,
+  });
   return response.data;
 }
